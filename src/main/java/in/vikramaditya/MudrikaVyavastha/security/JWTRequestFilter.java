@@ -38,7 +38,9 @@ public class JWTRequestFilter extends OncePerRequestFilter {
 
         String path = request.getServletPath();
 
+        System.out.println("➡️ Incoming path: " + path);
         if (EXCLUDED_PATHS.contains(path)) {
+            System.out.println("⏩ Skipping JWT for: " + path);
             filterChain.doFilter(request, response);
             return;
         }
