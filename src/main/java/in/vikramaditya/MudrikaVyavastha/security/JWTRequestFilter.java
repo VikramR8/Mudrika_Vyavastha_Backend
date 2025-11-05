@@ -25,27 +25,8 @@ public class JWTRequestFilter extends OncePerRequestFilter {
     private final UserDetailsService userDetailsService;
     private final JWTUtil jwtUtil;
 
-    private static final List<String> EXCLUDED_PATHS = List.of(
-            "/api/v1.0/register",
-            "/api/v1.0/login",
-            "/api/v1.0/activate",
-            "/api/v1.0/status",
-            "/api/v1.0/health"
-    );
-
-
     @Override
-    protected void doFilterInternal( HttpServletRequest request,@NonNull HttpServletResponse response,@NonNull FilterChain filterChain) throws ServletException, IOException {
-
-        String path = request.getServletPath();
-
-        if (EXCLUDED_PATHS.contains(path)) {
-            System.out.println("⏩ Skipping JWT for: " + path);
-            filterChain.doFilter(request, response);
-            System.out.println("➡️ Path: " + request.getServletPath());
-            return;
-        }
-
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
         final String authHeader = request.getHeader("Authorization");
         String email = null;
@@ -53,12 +34,12 @@ public class JWTRequestFilter extends OncePerRequestFilter {
 
         if(authHeader!=null && authHeader.startsWith("Bearer ")) {
             jwt = authHeader.substring(7);
-            email = jwtUtil.extractEmail(jwt);
+            email = jwtUtil.extractUsername(jwt);
         }
 
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = this.userDetailsService.loadUserByUsername(email);
-            if(jwtUtil.validateToken(jwt, email)) {
+            if(jwtUtil.validateToken(jwt, userDetails.getUsername())) {
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                         userDetails, null, userDetails.getAuthorities()
                 );

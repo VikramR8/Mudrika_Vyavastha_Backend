@@ -1,92 +1,146 @@
 package in.vikramaditya.MudrikaVyavastha.utils;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
-
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Function;
-
-import jakarta.annotation.PostConstruct;
 
 @Component
 public class JWTUtil {
 
-    @Value("${JWT_SECRET_KEY}")
+    @Value("${jwt.secret.key}")
     private String secretString;
 
-    // 2. This will hold your single, stable secret key
     private Key secretKey;
+
+    // token validity (ms) - 1 hour
+    private final long jwtExpirationMs = 60L * 60L * 1000L;
 
     @PostConstruct
     public void init() {
         this.secretKey = Keys.hmacShaKeyFor(secretString.getBytes());
     }
 
-    private final long jwtExpirationMs = 60 * 60 * 1000;
-
     /**
-     * Generate a JWT token for the given email
+     * Generate token using username as subject.
+     * You can add extra claims via the claims map.
      */
-    public String generateToken(String email) {
+    public String generateToken(String username) {
+        return generateToken(new HashMap<>(), username);
+    }
+
+    public String generateToken(Map<String, Object> extraClaims, String username) {
+        long now = System.currentTimeMillis();
         return Jwts.builder()
-                .setSubject(email)
-                .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
+                .setClaims(extraClaims)
+                .setSubject(username)
+                .setIssuedAt(new Date(now))
+                .setExpiration(new Date(now + jwtExpirationMs))
                 .signWith(secretKey, SignatureAlgorithm.HS256)
                 .compact();
     }
 
     /**
-     * Extract email (subject) from token
+     * Optional: create a refreshed token (same subject, new expiry).
      */
-    public String extractEmail(String token) {
-        return extractClaim(token, Claims::getSubject);
+    public String refreshToken(String token) {
+        String username = extractUsernameSafe(token);
+        if (username == null) return null;
+        return generateToken(username);
     }
 
     /**
-     * Extract expiration date from token
+     * Extract username (subject) from token.
+     * This returns null if token invalid/expired.
      */
+    public String extractUsernameSafe(String token) {
+        try {
+            return extractClaim(token, Claims::getSubject);
+        } catch (ExpiredJwtException e) {
+            // token expired -> return null (caller can decide)
+            return null;
+        } catch (JwtException e) {
+            return null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    // Preferred: throws ExpiredJwtException or JwtException to caller if you want strict behavior
+    public String extractUsername(String token) {
+        return extractClaim(token, Claims::getSubject);
+    }
+
     public Date extractExpiration(String token) {
         return extractClaim(token, Claims::getExpiration);
     }
 
-    /**
-     * Extract any claim using resolver
-     */
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
-        final Claims claims = extractAllClaims(token);
+        Claims claims = extractAllClaims(token);
+        if (claims == null) return null;
         return claimsResolver.apply(claims);
     }
 
     /**
-     * Validate token against given email
+     * Validate token by username
      */
-    public boolean validateToken(String token, String email) {
-        final String extractedEmail = extractEmail(token);
-        return (extractedEmail.equals(email) && !isTokenExpired(token));
+    public boolean validateToken(String token, String username) {
+        try {
+            String tokenUsername = extractUsername(token);
+            if (tokenUsername == null) return false;
+            return tokenUsername.equals(username) && !isTokenExpired(token);
+        } catch (ExpiredJwtException e) {
+            return false;
+        } catch (JwtException e) {
+            return false;
+        }
     }
 
     /**
-     * Check if token is expired
+     * Validate token by UserDetails (helper overload)
      */
+    public boolean validateToken(String token, UserDetails userDetails) {
+        if (userDetails == null) return false;
+        return validateToken(token, userDetails.getUsername());
+    }
+
     private boolean isTokenExpired(String token) {
-        return extractExpiration(token).before(new Date());
+        Date exp = extractExpiration(token);
+        if (exp == null) return true;
+        return exp.before(new Date());
     }
 
     /**
-     * Extract all claims from token
+     * Parses and returns all claims.
+     * Returns null on errors (expired/invalid).
+     * Uses small clock skew to tolerate time drift between servers.
      */
     private Claims extractAllClaims(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(secretKey)
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
+        try {
+            return Jwts.parserBuilder()
+                    .setSigningKey(secretKey)
+                    .setAllowedClockSkewSeconds(600) // allow 10 minutes skew
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+        } catch (ExpiredJwtException e) {
+            // rethrow if you want strict behavior, or return null (we return null)
+            return null;
+        } catch (JwtException e) {
+            // invalid signature / malformed / unsupported
+            return null;
+        }
     }
 }
