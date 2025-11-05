@@ -25,12 +25,13 @@ public class JWTRequestFilter extends OncePerRequestFilter {
     private final JWTUtil jwtUtil;
 
     private static final List<String> EXCLUDED_PATHS = List.of(
-            "/register",
-            "/login",
-            "/activate",
-            "/status",
-            "/health"
+            "/api/v1.0/register",
+            "/api/v1.0/login",
+            "/api/v1.0/activate",
+            "/api/v1.0/status",
+            "/api/v1.0/health"
     );
+
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
