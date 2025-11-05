@@ -3,6 +3,7 @@ package in.vikramaditya.MudrikaVyavastha.security;
 import in.vikramaditya.MudrikaVyavastha.utils.JWTUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import org.springframework.lang.NonNull;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -34,13 +35,14 @@ public class JWTRequestFilter extends OncePerRequestFilter {
 
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(@NonNull HttpServletRequest request,@NonNull HttpServletResponse response,@NonNull FilterChain filterChain) throws ServletException, IOException {
 
         String path = request.getServletPath();
 
         if (EXCLUDED_PATHS.contains(path)) {
             System.out.println("⏩ Skipping JWT for: " + path);
             filterChain.doFilter(request, response);
+            System.out.println("➡️ Path: " + request.getServletPath());
             return;
         }
 
