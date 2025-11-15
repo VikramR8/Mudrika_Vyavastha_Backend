@@ -22,16 +22,27 @@ public class EmailService {
     private final RestTemplate restTemplate = new RestTemplate();
 
 
-    public void sendEmail(String to, String subject, String bodyHtml) {
+    // replace your current sendEmail method with this
+    public ResponseEntity<String> sendEmail(String to, String subject, String bodyHtml) {
         try {
             String url = "https://api.brevo.com/v3/smtp/email";
+
+            // Ensure a full HTML document and correct charset
+            String finalHtml = "<!DOCTYPE html>"
+                    + "<html><head><meta charset=\"utf-8\"></head><body>"
+                    + bodyHtml
+                    + "</body></html>";
+
+            // --- Debug: print to logs so you can confirm what is actually being sent ---
+            System.out.println("----- Sending HTML Email to: " + to + " -----");
+            System.out.println(finalHtml);
+            System.out.println("----- End of HTML -----");
 
             Map<String, Object> requestBody = new HashMap<>();
             requestBody.put("sender", Map.of("email", fromEmail));
             requestBody.put("to", new Object[]{Map.of("email", to)});
             requestBody.put("subject", subject);
-
-            requestBody.put("htmlContent", bodyHtml);
+            requestBody.put("htmlContent", finalHtml);
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -39,15 +50,20 @@ public class EmailService {
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
 
-            restTemplate.exchange(url, HttpMethod.POST, request, String.class);
+            // Capture full response
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, request, String.class);
 
-            System.out.println("✅ Email sent successfully to " + to);
+            System.out.println("✅ Email API status: " + response.getStatusCode());
+            System.out.println("✅ Email API body: " + response.getBody());
+
+            return response;
 
         } catch (Exception e) {
             System.err.println("❌ Failed to send email: " + e.getMessage());
             throw new RuntimeException("Failed to send email", e);
         }
     }
+
     public void sendVerificationEmail(String to, String userName, String verificationLink) {
 
         String htmlContent =
