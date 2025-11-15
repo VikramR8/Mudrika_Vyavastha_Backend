@@ -32,16 +32,37 @@ public class ProfileService {
     private String activationURL;
 
     public ProfileDTO registerProfile(ProfileDTO profileDTO) {
+
         ProfileEntity newProfile = toEntity(profileDTO);
         newProfile.setActivationToken(UUID.randomUUID().toString());
         newProfile = profileRepository.save(newProfile);
 
-        //Send Activation Email
+        // Build activation link from application.properties
         String activationLink = activationURL + "/api/v1.0/activate?token=" + newProfile.getActivationToken();
-        String subject = "Activate your Mudrika Vyavastha account";
-        String body = "Click on the following link to activate your account: " + activationLink;
-        emailService.sendEmail(newProfile.getEmail(), subject, body);
 
+        // Email subject
+        String subject = "Activate Your Mudrika Vyavastha Account";
+
+        // Premium HTML email template (same design as verification)
+        String htmlContent =
+                "<div style='font-family:Arial, sans-serif; max-width:600px; margin:20px auto;"
+                        + "padding:20px; border:1px solid #eaeaea; border-radius:10px;'>"
+                        + "<h2 style='color:#0d6efd; text-align:center;'>Activate your account</h2>"
+                        + "<p style='font-size:14px;'>Hi " + newProfile.getFullName()
+                        + ", please activate your account to start using Mudrika Vyavastha.</p>"
+                        + "<p style='text-align:center; margin:20px 0;'>"
+                        + "<a href='" + activationLink + "' "
+                        + "style='display:inline-block; padding:10px 16px; background:#0d6efd; color:white;"
+                        + "text-decoration:none; border-radius:6px;'>Activate Account</a>"
+                        + "</p>"
+                        + "<p style='font-size:14px;'>Or copy this link:</p>"
+                        + "<p style='word-break:break-all; font-size:13px;'>" + activationLink + "</p>"
+                        + "<p style='font-size:12px; color:#777; text-align:center;'>"
+                        + "This link expires in 24 hours.</p>"
+                        + "</div>";
+
+        // Send activation email
+        emailService.sendEmail(newProfile.getEmail(), subject, htmlContent);
 
         return toDTO(newProfile);
     }
@@ -69,56 +90,47 @@ public class ProfileService {
                 .build();
     }
 
-    public boolean activateProfile (String activationToken) {
+    public boolean activateProfile(String activationToken) {
         return profileRepository.findByActivationToken(activationToken)
-                .map(profileEntity -> {
-                    profileEntity.setIsActive(true);
-                    profileRepository.save(profileEntity);
-                    return true;})
-                .orElse(false);
+                .map(profile -> {
+                    profile.setIsActive(true);
+                    profileRepository.save(profile);
+                    return true;
+                }).orElse(false);
     }
 
-    public boolean isAccountActive (String email) {
+    public boolean isAccountActive(String email) {
         return profileRepository.findByEmail(email)
                 .map(ProfileEntity::getIsActive)
                 .orElse(false);
     }
 
     public ProfileEntity getCurrentProfile() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String email = authentication.getName();
-        return profileRepository.findByEmail(authentication.getName())
-                .orElseThrow(()->new UsernameNotFoundException("Profile not found with email: " + authentication.getName()));
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return profileRepository.findByEmail(auth.getName())
+                .orElseThrow(() -> new UsernameNotFoundException("Profile not found: " + auth.getName()));
     }
 
     public ProfileDTO getPublicProfile(String email) {
-        ProfileEntity currentUser;
+        ProfileEntity user;
         if (email == null) {
-            currentUser = getCurrentProfile();
+            user = getCurrentProfile();
         } else {
-            currentUser = profileRepository.findByEmail(email)
-                    .orElseThrow(() -> new UsernameNotFoundException("Profile not found with email: " + email));
+            user = profileRepository.findByEmail(email)
+                    .orElseThrow(() -> new UsernameNotFoundException("Profile not found: " + email));
         }
 
-        return ProfileDTO.builder()
-                .id(currentUser.getId())
-                .fullName(currentUser.getFullName())
-                .email(currentUser.getEmail())
-                .profileImageUrl(currentUser.getProfileImageUrl())
-                .createdAt(currentUser.getCreatedAt())
-                .updatedAt(currentUser.getUpdatedAt())
-                .build();
+        return toDTO(user);
     }
 
 
     public Map<String, Object> authenticateAndGenerateToken(AuthDTO authDTO) {
         try {
-            authenticationManager
-                    .authenticate(new UsernamePasswordAuthenticationToken(authDTO.getEmail(), authDTO.getPassword()));
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(authDTO.getEmail(), authDTO.getPassword())
+            );
             String token = jwtUtil.generateToken(authDTO.getEmail());
-            return Map.of(
-                    "token", token,
-                    "user", getPublicProfile(authDTO.getEmail()));
+            return Map.of("token", token, "user", getPublicProfile(authDTO.getEmail()));
         } catch (Exception e) {
             throw new RuntimeException("Invalid email or password");
         }
