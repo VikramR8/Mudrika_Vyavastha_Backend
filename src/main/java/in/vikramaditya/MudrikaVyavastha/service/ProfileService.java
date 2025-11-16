@@ -57,12 +57,11 @@ public class ProfileService {
                         + "</p>"
                         + "<p style='font-size:14px;'>Or copy this link:</p>"
                         + "<p style='word-break:break-all; font-size:13px;'>" + activationLink + "</p>"
-                        + "<p style='font-size:12px; color:#777; text-align:center;'>"
-                        + "This link expires in 24 hours.</p>"
+                        + "<p style='font-size:12px; color:#777; text-align:center;'>This link expires in 24 hours.</p>"
                         + "</div>";
 
-        // Send activation email
         emailService.sendEmail(newProfile.getEmail(), subject, htmlContent);
+
 
         return toDTO(newProfile);
     }
