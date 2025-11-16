@@ -33,11 +33,6 @@ public class EmailService {
                     + bodyHtml
                     + "</body></html>";
 
-            // --- Debug: print to logs so you can confirm what is actually being sent ---
-            System.out.println("----- Sending HTML Email to: " + to + " -----");
-            System.out.println(finalHtml);
-            System.out.println("----- End of HTML -----");
-
             Map<String, Object> requestBody = new HashMap<>();
             requestBody.put("sender", Map.of("email", fromEmail));
             requestBody.put("to", new Object[]{Map.of("email", to)});
