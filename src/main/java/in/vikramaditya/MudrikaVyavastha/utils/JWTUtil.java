@@ -26,7 +26,7 @@ public class JWTUtil {
     private Key secretKey;
 
     // token validity (ms) - 1 hour
-    private final long jwtExpirationMs = 60L * 60L * 1000L;
+    private final long jwtExpirationMs = 7L * 24 * 60 * 60 * 1000;
 
     @PostConstruct
     public void init() {

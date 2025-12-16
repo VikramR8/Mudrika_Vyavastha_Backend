@@ -30,6 +30,7 @@ in\vikramaditya\MudrikaVyavastha\entity\ExpenseEntity$ExpenseEntityBuilder.class
 in\vikramaditya\MudrikaVyavastha\entity\IncomeEntity$IncomeEntityBuilder.class
 in\vikramaditya\MudrikaVyavastha\dto\RecentTransactionsDTO$RecentTransactionsDTOBuilder.class
 in\vikramaditya\MudrikaVyavastha\entity\ExpenseEntity.class
+in\vikramaditya\MudrikaVyavastha\controllers\HealthController.class
 in\vikramaditya\MudrikaVyavastha\dto\CategoryDTO$CategoryDTOBuilder.class
 in\vikramaditya\MudrikaVyavastha\controllers\FilterController.class
 in\vikramaditya\MudrikaVyavastha\entity\ProfileEntity$ProfileEntityBuilder.class
