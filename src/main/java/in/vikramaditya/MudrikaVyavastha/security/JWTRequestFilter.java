@@ -30,10 +30,15 @@ public class JWTRequestFilter extends OncePerRequestFilter {
         String email = null;
         String jwt = null;
 
-        if(authHeader!=null && authHeader.startsWith("Bearer ")) {
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
             jwt = authHeader.substring(7);
-            email = jwtUtil.extractUsername(jwt);
+            try {
+                email = jwtUtil.extractUsername(jwt);
+            } catch (Exception e) {
+                email = null;
+            }
         }
+
 
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = this.userDetailsService.loadUserByUsername(email);
