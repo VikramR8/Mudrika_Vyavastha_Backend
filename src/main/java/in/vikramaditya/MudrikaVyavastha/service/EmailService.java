@@ -1,17 +1,29 @@
 package in.vikramaditya.MudrikaVyavastha.service;
 
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.mail.javamail.JavaMailSender;
 
+
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class EmailService {
+
+    @Autowired
+    private JavaMailSender mailSender;
+
 
     @Value("${brevo.api.key}")
     private String brevoApiKey;
@@ -48,9 +60,6 @@ public class EmailService {
             // Capture full response
             ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, request, String.class);
 
-            System.out.println("✅ Email API status: " + response.getStatusCode());
-            System.out.println("✅ Email API body: " + response.getBody());
-
             return response;
 
         } catch (Exception e) {
@@ -74,5 +83,17 @@ public class EmailService {
                         + "</div>";
 
         sendEmail(to, "Verify your email", htmlContent);
+    }
+
+    public void sendEmailWithAttachment(String to, String subject, String body, byte[] attachment, String fileName) throws MessagingException {
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message , true);
+        helper.setFrom(fromEmail);
+        helper.setTo(to);
+        helper.setSubject(subject);
+        helper.setText(body);
+        helper.addAttachment(fileName, new ByteArrayResource(attachment));
+        mailSender.send(message);
+
     }
 }
