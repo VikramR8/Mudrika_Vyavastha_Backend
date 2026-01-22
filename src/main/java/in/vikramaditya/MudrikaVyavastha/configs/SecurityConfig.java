@@ -43,6 +43,7 @@ public class SecurityConfig {
                                 "/login"
                         ).permitAll()
                         .requestMatchers("/excel/download/**").authenticated()
+                        .requestMatchers("/email/**").authenticated()
                         .anyRequest().authenticated()
                 )
 
