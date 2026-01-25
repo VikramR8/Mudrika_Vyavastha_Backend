@@ -99,11 +99,13 @@ CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 ```
 
-```▶️ Run Locally
+▶️ Run Locally
+```
 mvn clean install
 mvn spring-boot:run
 ```
 
-```Backend will start on:
+Backend will start on:
+```
 http://localhost:8080
 ```
