@@ -70,7 +70,7 @@ MudrikaVyavastha uses **Cloudinary** for secure and scalable cloud-based media s
 ---
 
 ## 📁 Project Structure
-
+```
 src/main/java
 ├── configs → Security, CORS & Cloudinary configuration
 ├── controllers → REST controllers
@@ -79,6 +79,7 @@ src/main/java
 ├── security → JWT filters & utils
 ├── models → Entity classes
 └── dto → Request / Response DTOs
+```
 
 ---
 
@@ -96,9 +97,13 @@ JWT_SECRET=your_jwt_secret
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
-▶️ Run Locally
+```
+
+```▶️ Run Locally
 mvn clean install
 mvn spring-boot:run
-Backend will start on:
+```
 
+```Backend will start on:
 http://localhost:8080
+```
